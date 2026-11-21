@@ -4,6 +4,7 @@ import { TrayIcon } from '@tauri-apps/api/tray';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { exit } from '@tauri-apps/plugin-process';
 import { createTaggedError, extractErrorMessage } from 'wellcrafted/error';
+import { error as logError, info as logInfo } from '@tauri-apps/plugin-log';
 // import { commandCallbacks } from '$lib/commands';
 import { tryAsync } from 'wellcrafted/result';
 import { goto } from '$app/navigation';
@@ -16,7 +17,10 @@ const TRAY_ID = 'whispering-tray';
 const { SetTrayIconServiceErr } = createTaggedError('SetTrayIconServiceError');
 
 export function createTrayIconDesktopService() {
-	const trayPromise = initTray();
+	const trayPromise = initTray().catch((error) => {
+		void logError(`[tray] falha ao criar o icone da bandeja: ${String(error)}`);
+		throw error;
+	});
 	return {
 		setTrayIcon: (recorderState: WhisperingRecordingState) =>
 			tryAsync({
@@ -55,7 +59,6 @@ async function toggleWindow() {
 async function initTray() {
 	const existingTray = await TrayIcon.getById(TRAY_ID);
 	if (existingTray) return existingTray;
-
 	const trayMenu = await Menu.new({
 		items: [
 			// Janela
@@ -116,6 +119,7 @@ async function initTray() {
 		},
 	});
 
+	void logInfo(`[tray] icone da bandeja criado (id=${TRAY_ID})`);
 	return tray;
 }
 
