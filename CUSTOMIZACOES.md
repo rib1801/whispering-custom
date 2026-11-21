@@ -74,9 +74,15 @@ mantém dados e ajustes.
 ## Como compilar (Windows)
 
 ```powershell
-# dependências: Rust stable (MSVC), Visual Studio Build Tools, Node e Bun
-bun install
-cd apps/whispering
-bunx tauri build --bundles nsis
+powershell -ExecutionPolicy Bypass -File scripts/build-windows.ps1
 # instalador em: apps/whispering/src-tauri/target/release/bundle/nsis/*.exe
 ```
+
+O script cria antes as pastas `target\release\examples` e `target\release\deps`:
+o build script do crate `ort-sys` 2.0.0-rc.10 copia as DLLs do ONNX/DirectML para
+essas pastas com `fs::copy`, e num clone limpo a de `examples` não existe — o
+`unwrap` estoura com `path not found` e a compilação aborta. Não é bug deste
+repositório nem do código customizado; é contornado sem tocar em código.
+
+Dependências: Rust (toolchain MSVC), Visual Studio Build Tools com C++ x64, bun.
+
