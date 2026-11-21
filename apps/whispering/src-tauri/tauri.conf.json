@@ -50,6 +50,13 @@
 	"productName": "Whispering",
 	"version": "7.11.1",
 	"identifier": "com.bradenwong.whispering",
+	"plugins": {
+		"updater": {
+			"active": false,
+			"endpoints": [],
+			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUwQzE1RjEyRThENzg0OEEKUldTS2hOZm9FbC9CVU1uZ1JLWlluMm1mOHd4N1RWUkNjME9PcHA3Nkg2ek5RMnZyVTVDS2k1QkwK"
+		}
+	},
 	"app": {
 		"macOSPrivateApi": true,
 		"windows": [
