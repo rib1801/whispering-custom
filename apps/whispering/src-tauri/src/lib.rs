@@ -141,10 +141,13 @@ pub async fn run() {
                 None,
             ))
             .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-                let _ = app
-                    .get_webview_window("main")
-                    .expect("no main window")
-                    .set_focus();
+                // Segunda instância: traz a janela de volta mesmo se ela estiver
+                // escondida na bandeja (o X não fecha mais o app).
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
             }));
     }
 

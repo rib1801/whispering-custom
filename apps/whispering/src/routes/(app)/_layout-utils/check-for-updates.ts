@@ -7,7 +7,13 @@ import {
 import { rpc } from '$lib/query';
 
 export async function checkForUpdates() {
+	// Build customizado: o atualizador automático foi desligado de propósito,
+	// senão a versão oficial sobrescreveria esta (e os ajustes da bandeja e da
+	// barra compacta sumiriam).
+	const UPDATER_ENABLED = false;
+
 	try {
+		if (!UPDATER_ENABLED) return;
 		const update = await (shouldUseMockUpdates() ? mockCheck() : check());
 		if (update) {
 			await rpc.notify.info.execute({

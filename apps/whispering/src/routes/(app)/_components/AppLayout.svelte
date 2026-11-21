@@ -11,8 +11,11 @@
 	import UpdateDialog from '$lib/components/UpdateDialog.svelte';
 	import { rpc } from '$lib/query';
 	import { vadRecorder } from '$lib/stores/vad-recorder.svelte';
+	import { windowMode } from '$lib/stores/window-mode.svelte';
 	import { services } from '$lib/services';
 	import { settings } from '$lib/stores/settings.svelte';
+	import { getCurrentWindow } from '@tauri-apps/api/window';
+	import type { UnlistenFn } from '@tauri-apps/api/event';
 	import { syncWindowAlwaysOnTopWithRecorderState } from '../_layout-utils/alwaysOnTop.svelte';
 	import {
 		checkCompressionRecommendation,
@@ -39,6 +42,40 @@
 
 	let cleanupAccessibilityPermission: (() => void) | undefined;
 	let cleanupMicrophonePermission: (() => void) | undefined;
+	let unlistenCloseRequested: UnlistenFn | null = null;
+
+	/**
+	 * O X da janela deixa o app rodando na bandeja, em vez de encerrar.
+	 * Quem fecha de verdade é o item "Fechar o Whispering" no menu do ícone
+	 * da bandeja (botão direito).
+	 */
+	async function registerTrayCloseBehavior() {
+		unlistenCloseRequested = await getCurrentWindow().onCloseRequested(
+			async (event) => {
+				event.preventDefault();
+				windowMode.hideToTray();
+				explainTrayOnce();
+			},
+		);
+	}
+
+	const TRAY_HINT_KEY = 'whispering-tray-hint-shown';
+
+	/** Avisa uma única vez, senão o usuário acha que o app fechou de verdade. */
+	function explainTrayOnce() {
+		try {
+			if (localStorage.getItem(TRAY_HINT_KEY)) return;
+			localStorage.setItem(TRAY_HINT_KEY, 'true');
+		} catch (error) {
+			console.error('[tray] falha ao ler o aviso da bandeja', error);
+		}
+
+		void rpc.notify.info.execute({
+			title: 'O Whispering continua rodando',
+			description:
+				'Ele foi para a bandeja, perto do relógio. Ícone com o botão direito → "Fechar o Whispering" encerra de vez.',
+		});
+	}
 
 	onMount(() => {
 		// Sync operations - run immediately, these are fast
@@ -53,6 +90,8 @@
 		if (window.__TAURI_INTERNALS__) {
 			syncGlobalShortcutsWithSettings();
 			resetGlobalShortcutsToDefaultIfDuplicates();
+
+			void registerTrayCloseBehavior();
 
 			// Async operations - fire and forget, don't block UI rendering
 			// These show toasts/notifications on completion, no need to await
@@ -71,6 +110,8 @@
 	onDestroy(() => {
 		cleanupAccessibilityPermission?.();
 		cleanupMicrophonePermission?.();
+		unlistenCloseRequested?.();
+		unlistenCloseRequested = null;
 	});
 
 	if (window.__TAURI_INTERNALS__) {

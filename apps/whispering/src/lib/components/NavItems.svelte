@@ -7,7 +7,7 @@
 	import { Button } from '@epicenter/ui/button';
 	import * as DropdownMenu from '@epicenter/ui/dropdown-menu';
 	import { cn } from '@epicenter/ui/utils';
-	import { LogicalSize, getCurrentWindow } from '@tauri-apps/api/window';
+	import { windowMode } from '$lib/stores/window-mode.svelte';
 	import Database from '@lucide/svelte/icons/database';
 	import LayersIcon from '@lucide/svelte/icons/layers';
 	import ListIcon from '@lucide/svelte/icons/list';
@@ -70,7 +70,7 @@
 						label: 'Minimize',
 						icon: Minimize2Icon,
 						type: 'button',
-						action: () => getCurrentWindow().setSize(new LogicalSize(72, 84)),
+						action: () => windowMode.enterCompact(),
 					},
 				] as const)
 			: []),

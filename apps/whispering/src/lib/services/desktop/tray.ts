@@ -1,4 +1,4 @@
-import { Menu, MenuItem } from '@tauri-apps/api/menu';
+import { Menu, MenuItem, PredefinedMenuItem } from '@tauri-apps/api/menu';
 import { resolveResource } from '@tauri-apps/api/path';
 import { TrayIcon } from '@tauri-apps/api/tray';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -9,6 +9,7 @@ import { tryAsync } from 'wellcrafted/result';
 import { goto } from '$app/navigation';
 // import { extension } from '@epicenter/extension';
 import type { WhisperingRecordingState } from '$lib/constants/audio';
+import { windowMode } from '$lib/stores/window-mode.svelte';
 
 const TRAY_ID = 'whispering-tray';
 
@@ -32,40 +33,65 @@ export function createTrayIconDesktopService() {
 	};
 }
 
+/** Traz a janela de volta — inclusive se o Windows a tiver minimizado. */
+async function showMainWindow() {
+	const window = getCurrentWindow();
+	await window.show();
+	await window.unminimize();
+	await window.setFocus();
+}
+
+/** Clique esquerdo no ícone: mostra se estiver escondida, esconde se estiver à vista. */
+async function toggleWindow() {
+	const window = getCurrentWindow();
+	if (await window.isVisible()) {
+		windowMode.rememberCompactPosition();
+		await window.hide();
+		return;
+	}
+	await showMainWindow();
+}
+
 async function initTray() {
 	const existingTray = await TrayIcon.getById(TRAY_ID);
 	if (existingTray) return existingTray;
 
 	const trayMenu = await Menu.new({
 		items: [
-			// Window Controls Section
+			// Janela
 			await MenuItem.new({
 				id: 'show',
-				text: 'Show Window',
-				action: () => getCurrentWindow().show(),
+				text: 'Mostrar janela',
+				action: () => void showMainWindow(),
 			}),
 
 			await MenuItem.new({
-				id: 'hide',
-				text: 'Hide Window',
-				action: () => getCurrentWindow().hide(),
-			}),
-
-			// Settings Section
-			await MenuItem.new({
-				id: 'settings',
-				text: 'Settings',
+				id: 'compact',
+				text: 'Barra compacta',
 				action: () => {
-					goto('/settings');
-					return getCurrentWindow().show();
+					void showMainWindow().then(() => windowMode.enterCompact());
 				},
 			}),
 
-			// Quit Section
+			// Ajustes
+			await MenuItem.new({
+				id: 'settings',
+				text: 'Configurações',
+				action: () => {
+					void showMainWindow().then(() => goto('/settings'));
+				},
+			}),
+
+			await PredefinedMenuItem.new({ item: 'Separator' }),
+
+			// Encerrar de verdade
 			await MenuItem.new({
 				id: 'quit',
-				text: 'Quit',
-				action: () => void exit(0),
+				text: 'Fechar o Whispering',
+				action: () => {
+					windowMode.rememberCompactPosition();
+					void exit(0);
+				},
 			}),
 		],
 	});
@@ -73,7 +99,9 @@ async function initTray() {
 	const tray = await TrayIcon.new({
 		id: TRAY_ID,
 		icon: await getIconPath('IDLE'),
+		tooltip: 'Whispering — clique para mostrar/esconder, botão direito para fechar',
 		menu: trayMenu,
+		// Menu no botão direito; o esquerdo mostra/esconde a janela.
 		menuOnLeftClick: false,
 		action: (e) => {
 			if (
@@ -81,7 +109,7 @@ async function initTray() {
 				e.button === 'Left' &&
 				e.buttonState === 'Down'
 			) {
-				// commandCallbacks.toggleManualRecording();
+				void toggleWindow();
 				return true;
 			}
 			return false;

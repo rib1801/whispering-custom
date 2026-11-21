@@ -12,7 +12,7 @@
 	import { GithubIcon } from '$lib/components/icons';
 	import { page } from '$app/state';
 	import { toggleMode } from 'mode-watcher';
-	import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
+	import { windowMode } from '$lib/stores/window-mode.svelte';
 	import { notificationLog } from '$lib/components/NotificationLog.svelte';
 	import MigrationDialog, {
 		migrationDialog,
@@ -194,7 +194,7 @@
 						{#snippet child({ props })}
 							<button
 								onclick={() =>
-									getCurrentWindow().setSize(new LogicalSize(72, 84))}
+									windowMode.enterCompact()}
 								{...props}
 							>
 								<Minimize2Icon />

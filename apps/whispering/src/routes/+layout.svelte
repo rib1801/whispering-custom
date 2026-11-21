@@ -5,6 +5,7 @@
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 	import { ModeWatcher, mode } from 'mode-watcher';
 	import { Toaster, type ToasterProps } from 'svelte-sonner';
+	import { windowMode } from '$lib/stores/window-mode.svelte';
 	import '@epicenter/ui/app.css';
 	import * as Tooltip from '@epicenter/ui/tooltip';
 
@@ -48,12 +49,14 @@
 	</Tooltip.Provider>
 </QueryClientProvider>
 
-<Toaster
-	offset={16}
-	class="xs:block hidden"
-	theme={mode.current}
-	{...TOASTER_SETTINGS}
-/>
+{#if !windowMode.isCompact}
+	<Toaster
+		offset={16}
+		class="xs:block hidden"
+		theme={mode.current}
+		{...TOASTER_SETTINGS}
+	/>
+{/if}
 <ModeWatcher defaultMode="dark" track={false} />
 <SvelteQueryDevtools client={queryClient} buttonPosition="bottom-right" />
 
